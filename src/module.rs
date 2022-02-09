@@ -39,7 +39,6 @@ pub fn make_module_item_path(
     module_parts: &[String],
     package_name: &str,
     package_src_path: &PathBuf,
-    crate_name: &str,
     crate_path: &PathBuf,
     self_path: &PathBuf,
 ) -> Result<ModuleItemPath, String> {
@@ -149,7 +148,6 @@ fn collect_module_items_impl(
                     module_parts,
                     package_name,
                     package_src_path,
-                    crate_name,
                     crate_path,
                     self_path,
                 )?),
@@ -178,7 +176,6 @@ fn collect_module_items_impl(
                     module_parts,
                     package_name,
                     package_src_path,
-                    crate_name,
                     crate_path,
                     self_path,
                 )?));
@@ -195,7 +192,6 @@ fn collect_module_items_impl(
                     module_parts,
                     package_name,
                     package_src_path,
-                    crate_name,
                     crate_path,
                     self_path,
                 )?));

@@ -220,7 +220,6 @@ impl Expuncher {
                         &full_parts,
                         &self.package_name,
                         &self.package_src_path,
-                        crate_name,
                         crate_path,
                         &self_path,
                     )?;
