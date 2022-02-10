@@ -12,7 +12,6 @@ pub struct Expuncher {
     collected_modules: ModuleNode,
     package_name: String,
     package_src_path: PathBuf,
-    crate_visibility: String,
 }
 
 impl Expuncher {
@@ -30,7 +29,6 @@ impl Expuncher {
             collected_modules: ModuleNode::new(),
             package_name: String::from(package_name),
             package_src_path,
-            crate_visibility: String::from("pub "),
         }
     }
 
@@ -42,7 +40,7 @@ impl Expuncher {
     pub fn analyze_source_file(&mut self, source_path: &PathBuf) -> Result<(), String> {
         let source_parts = Vec::new();
         self.collected_modules
-            .update(&source_parts, source_path.clone());
+            .update(&source_parts, source_path.clone(), Some("pub"));
 
         self.analyze_file_impl(source_path, &source_parts, "crate", source_path)?;
         self.collected_modules.sort_replacement_spans();
@@ -145,8 +143,29 @@ impl Expuncher {
 
                     // ファイルが解決されるモジュールのみを登録
                     if let ModuleItemPath::File(_, path) = module_item_path {
+                        // トップレベルのソースコードの解析時でありライブラリクレートが直接useされている場合に限り
+                        // モジュールの可視性をuseの指定に合わせる
+                        let module_vis = if is_lib_crate && source_parts.is_empty() {
+                            let module_vis = item_use.vis.to_token_stream().to_string();
+                            if module_vis.is_empty() {
+                                None
+                            } else {
+                                Some(module_vis)
+                            }
+                        } else {
+                            Some(String::from("pub"))
+                        };
+
                         // ソースコードが依存するモジュールを登録
-                        if let None = self.collected_modules.update(&full_parts, path.clone()) {
+                        if let None = self.collected_modules.update(
+                            &full_parts,
+                            path.clone(),
+                            if let Some(vis) = &module_vis {
+                                Some(vis)
+                            } else {
+                                None
+                            },
+                        ) {
                             // 依存するモジュールのソースコードを解析
                             self.analyze_file_impl(
                                 path,
@@ -160,12 +179,6 @@ impl Expuncher {
                                 if is_lib_crate { path } else { crate_path },
                             )?;
                         }
-                    }
-
-                    // トップレベルのソースコードの解析時でありライブラリクレートが直接useされている場合に限り
-                    // クレートの可視性をuseの指定に合わせる
-                    if is_lib_crate && source_parts.is_empty() {
-                        self.crate_visibility = item_use.vis.to_token_stream().to_string() + " ";
                     }
                 }
 
@@ -238,8 +251,18 @@ impl Expuncher {
                             });
                         }
 
+                        let module_vis = item_mod.vis.to_token_stream().to_string();
+
                         // ソースコードが依存するモジュールを登録
-                        if let None = self.collected_modules.update(&full_parts, path.clone()) {
+                        if let None = self.collected_modules.update(
+                            &full_parts,
+                            path.clone(),
+                            if module_vis.is_empty() {
+                                None
+                            } else {
+                                Some(&module_vis)
+                            },
+                        ) {
                             // 新たに登録できた場合にのみ依存するモジュールのソースコードを解析
                             // 注：mod宣言ではクレートは変更されない
                             self.analyze_file_impl(path, &full_parts, crate_name, crate_path)?;
@@ -326,10 +349,10 @@ impl Expuncher {
             println!();
             println!(
                 "{}mod {} {{",
-                if source_parts.is_empty() && name == &self.package_name {
-                    &self.crate_visibility
+                if let Some(visibility) = &child.visibility {
+                    visibility.clone() + " "
                 } else {
-                    "pub "
+                    String::from("")
                 },
                 name
             );
@@ -449,6 +472,7 @@ impl Expuncher {
 #[derive(Debug)]
 pub struct ModuleNode {
     pub path: Option<PathBuf>,
+    pub visibility: Option<String>,
     pub replacement_spans: Vec<ReplacementSpan>,
     pub children: HashMap<String, ModuleNode>,
 }
@@ -464,6 +488,7 @@ impl ModuleNode {
     pub fn new() -> ModuleNode {
         ModuleNode {
             path: None,
+            visibility: Some(String::from("pub")),
             replacement_spans: Vec::new(),
             children: HashMap::new(),
         }
@@ -472,12 +497,22 @@ impl ModuleNode {
     /// モジュールのノードを再帰的に追加して末尾要素にファイルのパスを登録する
     ///
     /// パスが既に登録されている場合は返戻値として`Some(source_path)`が返される
-    pub fn update(&mut self, module_parts: &[String], source_path: PathBuf) -> Option<PathBuf> {
+    pub fn update(
+        &mut self,
+        module_parts: &[String],
+        source_path: PathBuf,
+        visibility: Option<&str>,
+    ) -> Option<PathBuf> {
         if module_parts.is_empty() {
             match self.path {
                 Some(_) => Some(source_path),
                 None => {
                     self.path = Some(source_path);
+                    self.visibility = if let Some(visibility) = visibility {
+                        Some(String::from(visibility))
+                    } else {
+                        None
+                    };
                     None
                 }
             }
@@ -487,7 +522,7 @@ impl ModuleNode {
                 .entry(module_parts[0].clone())
                 .or_insert(ModuleNode::new());
 
-            child.update(&module_parts[1..], source_path)
+            child.update(&module_parts[1..], source_path, visibility)
         }
     }
 
