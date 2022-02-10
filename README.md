@@ -24,7 +24,7 @@ cargo expunch <source_code_path>
 ```toml
 [package]
 name = "example"
-...
+# ...
 ```
 
 ##### `src/main.rs`
