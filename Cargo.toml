@@ -1,7 +1,11 @@
 [package]
-name = "expunch"
+name = "cargo-expunch"
 version = "0.1.0"
+authors = ["accup"]
+description = "Cargo subcommand to expand `use`d modules or declared `mod`ule in a Rust source-code into that contents in the workspace library crate."
+license = "MIT"
 edition = "2021"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -12,4 +16,5 @@ quote = "1.0"
 syn = { version = "1.0", features = ["full", "extra-traits"] }
 
 [[bin]]
-name = "expunch"
+name = "cargo-expunch"
+path = "src/main.rs"
