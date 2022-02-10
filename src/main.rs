@@ -27,8 +27,14 @@ ARGS:
 }
 
 fn main() {
-    // サブコマンドの場合ははじめにcargoがくるので除外
-    let args: Vec<String> = env::args().skip_while(|arg| arg == "cargo").collect();
+    let mut args: Vec<String> = env::args().collect();
+
+    // サブコマンドの場合は第2引数に"expunch"がくるので除外する
+    if let Some(arg) = args.get(1) {
+        if arg == "expunch" {
+            args.remove(1);
+        }
+    }
 
     match args.len() {
         // コマンドライン引数が指定されていない
