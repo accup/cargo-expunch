@@ -27,7 +27,8 @@ ARGS:
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    // サブコマンドの場合ははじめにcargoがくるので除外
+    let args: Vec<String> = env::args().skip_while(|arg| arg == "cargo").collect();
 
     match args.len() {
         // コマンドライン引数が指定されていない
