@@ -1,5 +1,5 @@
+use cargo_expunch::expuncher::Expuncher;
 use cargo_metadata::MetadataCommand;
-use expunch::{self, expuncher::Expuncher};
 use std::env;
 use std::path::PathBuf;
 
@@ -10,11 +10,10 @@ Expand `use`d modules or declared `mod`ule in a Rust source-code into that conte
 Rustソースコード中のuse文とモジュール宣言をワークスペースのライブラリクレートに含まれるソースコードの内容に展開する
 
 USAGE:
-    cargo run -p expunch <source_code_path>
-    cargo run --package expunch <source_code_path>
+    cargo expunch <source_code_path>
 
-    * Recommend to use this binary crate as one of the dependencies in your workspace
-      このバイナリクレートはワークスペースの依存関係として利用することを推奨します
+    * Use this subcommand at the directory of your workspace
+      このサブコマンドはワークスペースのディレクトリで使用する必要があります
 
 OPTIONS:
     h, --help               Prints help information
@@ -64,7 +63,7 @@ fn main() {
 /// Rustソースコードを解析して展開する
 fn expunch_file(source_code_path: &str) -> Result<(), String> {
     let source_code_path = PathBuf::from(source_code_path);
-    let package_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let package_path = PathBuf::from(".");
     let metadata = MetadataCommand::new()
         .manifest_path("./Cargo.toml")
         .current_dir(&package_path)
