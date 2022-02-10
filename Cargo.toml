@@ -1,6 +1,6 @@
 [package]
 name = "cargo-expunch"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["accup"]
 description = "Cargo subcommand to expand `use`d modules or declared `mod`ule in a Rust source-code into that contents in the workspace library crate."
 license = "MIT"
